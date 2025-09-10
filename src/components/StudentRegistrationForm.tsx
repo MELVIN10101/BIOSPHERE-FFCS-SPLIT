@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GraduationCap, Loader2 } from 'lucide-react';
 import FormField from './FormField';
 import SuccessModal from './SuccessModal';
@@ -17,6 +17,7 @@ const StudentRegistrationForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [departmentCounts, setDepartmentCounts] = useState<Record<string, number>>({});
 
   const departments = [
     'EVENT MANAGEMENT',
@@ -27,11 +28,34 @@ const StudentRegistrationForm: React.FC = () => {
     'OUTREACH'
   ];
 
+  // Fetch counts when component loads
+  useEffect(() => {
+    fetchDepartmentCounts();
+  }, []);
+
+  const fetchDepartmentCounts = async () => {
+    const { data, error } = await supabase
+      .from('students')
+      .select('department', { count: 'exact' });
+
+    if (error) {
+      console.error('Error fetching department counts:', error);
+      return;
+    }
+
+    // Count manually since supabase-js doesn't directly support group + count
+    const counts: Record<string, number> = {};
+    data?.forEach((row: any) => {
+      counts[row.department] = (counts[row.department] || 0) + 1;
+    });
+
+    setDepartmentCounts(counts);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -82,25 +106,24 @@ const StudentRegistrationForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-
+      // Check department count
       const { count, error: countError } = await supabase                     
-          .from('students')                                                  
-          .select('*', { count: 'exact', head: true })                       
-          .eq('department', formData.department);                            
-                                                                             
-        if (countError) {                                                    
-          console.error('Error checking department count:',                  
-       countError);                                                          
-          alert('An error occurred while checking the department limit. Please try again.');
-         setIsSubmitting(false);                                             
-          return;                                                            
-       }                                                                       
+        .from('students')                                                  
+        .select('*', { count: 'exact', head: true })                       
+        .eq('department', formData.department);                            
+
+      if (countError) {                                                    
+        console.error('Error checking department count:', countError);                                                          
+        alert('An error occurred while checking the department limit. Please try again.');
+        setIsSubmitting(false);                                             
+        return;                                                            
+      }                                                                       
                                                                                
-       if (count !== null && count >= 20) {                                    
-                  setErrors(prev => ({ ...prev, department: 'This department has reached its registration limit' }));                                    
-         setIsSubmitting(false);                                               
-         return;                                                               
-       } 
+      if (count !== null && count >= 20) {                                    
+        setErrors(prev => ({ ...prev, department: 'This department has reached its registration limit' }));                                    
+        setIsSubmitting(false);                                               
+        return;                                                               
+      } 
 
       const studentData: Omit<Student, 'id' | 'created_at'> = {
         name: formData.name.trim(),
@@ -116,7 +139,6 @@ const StudentRegistrationForm: React.FC = () => {
 
       if (error) {
         if (error.code === '23505') {
-          // Unique constraint violation
           if (error.message.includes('reg_no')) {
             setErrors({ reg_no: 'This registration number is already taken' });
           } else if (error.message.includes('email')) {
@@ -138,6 +160,9 @@ const StudentRegistrationForm: React.FC = () => {
         phone: '',
         department: ''
       });
+
+      // Refresh department counts after new registration
+      fetchDepartmentCounts();
       
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -214,6 +239,16 @@ const StudentRegistrationForm: React.FC = () => {
                 error={errors.department}
                 options={departments}
               />
+
+              {/* Show department counts */}
+              <div className="mt-4 text-sm text-gray-700 bg-gray-100 p-3 rounded-lg">
+                <p className="font-semibold mb-2">Department Status:</p>
+                {departments.map(dep => (
+                  <p key={dep}>
+                    {dep}: {departmentCounts[dep] || 0}/20
+                  </p>
+                ))}
+              </div>
 
               <button
                 type="submit"
