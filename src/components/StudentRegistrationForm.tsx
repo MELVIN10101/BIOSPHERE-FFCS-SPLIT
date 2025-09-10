@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GraduationCap, Loader2 } from 'lucide-react';
 import FormField from './FormField';
 import SuccessModal from './SuccessModal';
@@ -17,44 +17,21 @@ const StudentRegistrationForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [departmentCounts, setDepartmentCounts] = useState<Record<string, number>>({});
 
   const departments = [
-    'EVENT MANAGEMENT',
-    'TECHNICAL',
-    'DESIGN',
-    'SOCIAL MEDIA',
-    'CONTENT',
-    'OUTREACH'
+    'Event Management',
+    'Technical', 
+    'Design',
+    'Social Media',
+    'Content',
+    'Outreach',
   ];
-
-  // Fetch counts when component loads
-  useEffect(() => {
-    fetchDepartmentCounts();
-  }, []);
-
-  const fetchDepartmentCounts = async () => {
-    const { data, error } = await supabase
-      .from('students')
-      .select('department'); // ✅ simpler: fetch department column only
-
-    if (error) {
-      console.error('Error fetching department counts:', error.message, error.details);
-      return;
-    }
-
-    const counts: Record<string, number> = {};
-    data?.forEach((row: any) => {
-      counts[row.department] = (counts[row.department] || 0) + 1;
-    });
-
-    setDepartmentCounts(counts);
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-
+    
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -97,7 +74,7 @@ const StudentRegistrationForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!validateForm()) {
       return;
     }
@@ -105,28 +82,6 @@ const StudentRegistrationForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // ✅ safer department count query
-      // const { count, error: countError } = await supabase
-      //   .from('students')
-      //   .select('*', { count: 'exact', head: true })
-      //   .eq('department', formData.department);
-
-      // if (countError) {
-      //   console.error('Error checking department count:', countError.message, countError.details);
-      //   alert('An error occurred while checking the department limit. Please try again.');
-      //   setIsSubmitting(false);
-      //   return;
-      // }
-
-      // if (count !== null && count >= 20) {
-      //   setErrors(prev => ({
-      //     ...prev,
-      //     department: 'This department has reached its registration limit'
-      //   }));
-      //   setIsSubmitting(false);
-      //   return;
-      // }
-
       const studentData: Omit<Student, 'id' | 'created_at'> = {
         name: formData.name.trim(),
         reg_no: formData.reg_no.trim(),
@@ -135,24 +90,26 @@ const StudentRegistrationForm: React.FC = () => {
         department: formData.department
       };
 
-      const { error } = await supabase.from('students').insert([studentData]);
+      const { error } = await supabase
+        .from('students')
+        .insert([studentData]);
 
       if (error) {
         if (error.code === '23505') {
+          // Unique constraint violation
           if (error.message.includes('reg_no')) {
             setErrors({ reg_no: 'This registration number is already taken' });
           } else if (error.message.includes('email')) {
             setErrors({ email: 'This email address is already registered' });
           }
         } else {
-          console.error('Error inserting student:', error.message, error.details);
+          console.error('Error inserting student:', error);
           alert('An error occurred while submitting the form. Please try again.');
         }
-        setIsSubmitting(false);
         return;
       }
 
-      // ✅ Success
+      // Success
       setShowSuccessModal(true);
       setFormData({
         name: '',
@@ -161,8 +118,7 @@ const StudentRegistrationForm: React.FC = () => {
         phone: '',
         department: ''
       });
-
-      fetchDepartmentCounts();
+      
     } catch (error) {
       console.error('Unexpected error:', error);
       alert('An unexpected error occurred. Please try again.');
@@ -183,7 +139,7 @@ const StudentRegistrationForm: React.FC = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              BIOSPHERE FFCS DEPARTMENT SELECTION FORM
+              BIOSPHERE Student Registration
             </h1>
             <p className="text-gray-600">
               Fill out the form below to complete your registration
@@ -217,7 +173,7 @@ const StudentRegistrationForm: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 error={errors.email}
-                placeholder="Enter your college email id"
+                placeholder="Enter your email address"
               />
 
               <FormField
@@ -238,16 +194,6 @@ const StudentRegistrationForm: React.FC = () => {
                 error={errors.department}
                 options={departments}
               />
-
-              {/* Show department counts */}
-              <div className="mt-4 text-sm text-gray-700 bg-gray-100 p-3 rounded-lg">
-                <p className="font-semibold mb-2">Department Status:</p>
-                {departments.map(dep => (
-                  <p key={dep}>
-                    {dep}: {departmentCounts[dep] || 0}/20
-                  </p>
-                ))}
-              </div>
 
               <button
                 type="submit"
@@ -272,9 +218,9 @@ const StudentRegistrationForm: React.FC = () => {
         </div>
       </div>
 
-      <SuccessModal
-        isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
+      <SuccessModal 
+        isOpen={showSuccessModal} 
+        onClose={() => setShowSuccessModal(false)} 
       />
     </>
   );
