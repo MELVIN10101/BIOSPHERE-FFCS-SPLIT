@@ -34,18 +34,18 @@ const StudentRegistrationForm: React.FC = () => {
   }, []);
 
   const fetchDepartmentCounts = async () => {
-    const { data, error } = await supabase.from('students').select('department');
+    const { data, error } = await supabase
+      .from('students')
+      .select('department'); // ✅ simpler: fetch department column only
 
     if (error) {
-      console.error('Error fetching department counts:', error);
+      console.error('Error fetching department counts:', error.message, error.details);
       return;
     }
 
     const counts: Record<string, number> = {};
     data?.forEach((row: any) => {
-      if (row.department) {
-        counts[row.department] = (counts[row.department] || 0) + 1;
-      }
+      counts[row.department] = (counts[row.department] || 0) + 1;
     });
 
     setDepartmentCounts(counts);
@@ -84,7 +84,7 @@ const StudentRegistrationForm: React.FC = () => {
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else if (!/^\d{10,15}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Please enter a valid phone number (10–15 digits)';
+      newErrors.phone = 'Please enter a valid phone number (10-15 digits)';
     }
 
     if (!formData.department) {
@@ -98,19 +98,21 @@ const StudentRegistrationForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      // Check department count before inserting
+      // ✅ safer department count query
       const { count, error: countError } = await supabase
         .from('students')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('department', formData.department);
 
       if (countError) {
-        console.error('Error checking department count:', countError);
+        console.error('Error checking department count:', countError.message, countError.details);
         alert('An error occurred while checking the department limit. Please try again.');
         setIsSubmitting(false);
         return;
@@ -143,13 +145,14 @@ const StudentRegistrationForm: React.FC = () => {
             setErrors({ email: 'This email address is already registered' });
           }
         } else {
-          console.error('Error inserting student:', error);
+          console.error('Error inserting student:', error.message, error.details);
           alert('An error occurred while submitting the form. Please try again.');
         }
+        setIsSubmitting(false);
         return;
       }
 
-      // Success
+      // ✅ Success
       setShowSuccessModal(true);
       setFormData({
         name: '',
@@ -182,7 +185,9 @@ const StudentRegistrationForm: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               BIOSPHERE FFCS DEPARTMENT SELECTION FORM
             </h1>
-            <p className="text-gray-600">Fill out the form below to complete your registration</p>
+            <p className="text-gray-600">
+              Fill out the form below to complete your registration
+            </p>
           </div>
 
           <div className="bg-white shadow-xl rounded-xl px-8 py-10">
@@ -234,7 +239,7 @@ const StudentRegistrationForm: React.FC = () => {
                 options={departments}
               />
 
-              {/* Department counts */}
+              {/* Show department counts */}
               <div className="mt-4 text-sm text-gray-700 bg-gray-100 p-3 rounded-lg">
                 <p className="font-semibold mb-2">Department Status:</p>
                 {departments.map(dep => (
@@ -267,7 +272,10 @@ const StudentRegistrationForm: React.FC = () => {
         </div>
       </div>
 
-      <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} />
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+      />
     </>
   );
 };
