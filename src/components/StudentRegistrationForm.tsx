@@ -159,7 +159,7 @@ const StudentRegistrationForm: React.FC = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              BIOSPHERE Student Registration
+              BIOSPHERE FFCS DEPARTMENT SELECTION FORM
             </h1>
             <p className="text-gray-600">
               Fill out the form below to complete your registration
@@ -193,7 +193,7 @@ const StudentRegistrationForm: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 error={errors.email}
-                placeholder="Enter your email address"
+                placeholder="Enter your college email id"
               />
 
               <FormField
