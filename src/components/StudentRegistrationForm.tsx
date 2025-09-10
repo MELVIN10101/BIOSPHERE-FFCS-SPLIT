@@ -82,6 +82,26 @@ const StudentRegistrationForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+
+      const { count, error: countError } = await supabase                     
+          .from('students')                                                  
+          .select('*', { count: 'exact', head: true })                       
+          .eq('department', formData.department);                            
+                                                                             
+        if (countError) {                                                    
+          console.error('Error checking department count:',                  
+       countError);                                                          
+          alert('An error occurred while checking the department limit. Please try again.');
+         setIsSubmitting(false);                                             
+          return;                                                            
+       }                                                                       
+                                                                               
+       if (count !== null && count >= 20) {                                    
+                  setErrors(prev => ({ ...prev, department: 'This department has reached its registration limit' }));                                    
+         setIsSubmitting(false);                                               
+         return;                                                               
+       } 
+
       const studentData: Omit<Student, 'id' | 'created_at'> = {
         name: formData.name.trim(),
         reg_no: formData.reg_no.trim(),
