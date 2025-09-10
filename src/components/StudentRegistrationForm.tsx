@@ -21,7 +21,7 @@ const StudentRegistrationForm: React.FC = () => {
 
   const departments = [
     'EVENT MANAGEMENT',
-    'TECHNICAL', 
+    'TECHNICAL',
     'DESIGN',
     'SOCIAL MEDIA',
     'CONTENT',
@@ -34,19 +34,18 @@ const StudentRegistrationForm: React.FC = () => {
   }, []);
 
   const fetchDepartmentCounts = async () => {
-    const { data, error } = await supabase
-      .from('students')
-      .select('department', { count: 'exact' });
+    const { data, error } = await supabase.from('students').select('department');
 
     if (error) {
       console.error('Error fetching department counts:', error);
       return;
     }
 
-    // Count manually since supabase-js doesn't directly support group + count
     const counts: Record<string, number> = {};
     data?.forEach((row: any) => {
-      counts[row.department] = (counts[row.department] || 0) + 1;
+      if (row.department) {
+        counts[row.department] = (counts[row.department] || 0) + 1;
+      }
     });
 
     setDepartmentCounts(counts);
@@ -55,7 +54,7 @@ const StudentRegistrationForm: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -85,7 +84,7 @@ const StudentRegistrationForm: React.FC = () => {
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else if (!/^\d{10,15}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Please enter a valid phone number (10-15 digits)';
+      newErrors.phone = 'Please enter a valid phone number (10–15 digits)';
     }
 
     if (!formData.department) {
@@ -98,32 +97,33 @@ const StudentRegistrationForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
 
     try {
-      // Check department count
-      const { count, error: countError } = await supabase                     
-        .from('students')                                                  
-        .select('*', { count: 'exact', head: true })                       
-        .eq('department', formData.department);                            
+      // Check department count before inserting
+      const { count, error: countError } = await supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true })
+        .eq('department', formData.department);
 
-      if (countError) {                                                    
-        console.error('Error checking department count:', countError);                                                          
+      if (countError) {
+        console.error('Error checking department count:', countError);
         alert('An error occurred while checking the department limit. Please try again.');
-        setIsSubmitting(false);                                             
-        return;                                                            
-      }                                                                       
-                                                                               
-      if (count !== null && count >= 20) {                                    
-        setErrors(prev => ({ ...prev, department: 'This department has reached its registration limit' }));                                    
-        setIsSubmitting(false);                                               
-        return;                                                               
-      } 
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (count !== null && count >= 20) {
+        setErrors(prev => ({
+          ...prev,
+          department: 'This department has reached its registration limit'
+        }));
+        setIsSubmitting(false);
+        return;
+      }
 
       const studentData: Omit<Student, 'id' | 'created_at'> = {
         name: formData.name.trim(),
@@ -133,9 +133,7 @@ const StudentRegistrationForm: React.FC = () => {
         department: formData.department
       };
 
-      const { error } = await supabase
-        .from('students')
-        .insert([studentData]);
+      const { error } = await supabase.from('students').insert([studentData]);
 
       if (error) {
         if (error.code === '23505') {
@@ -161,9 +159,7 @@ const StudentRegistrationForm: React.FC = () => {
         department: ''
       });
 
-      // Refresh department counts after new registration
       fetchDepartmentCounts();
-      
     } catch (error) {
       console.error('Unexpected error:', error);
       alert('An unexpected error occurred. Please try again.');
@@ -186,9 +182,7 @@ const StudentRegistrationForm: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               BIOSPHERE FFCS DEPARTMENT SELECTION FORM
             </h1>
-            <p className="text-gray-600">
-              Fill out the form below to complete your registration
-            </p>
+            <p className="text-gray-600">Fill out the form below to complete your registration</p>
           </div>
 
           <div className="bg-white shadow-xl rounded-xl px-8 py-10">
@@ -240,7 +234,7 @@ const StudentRegistrationForm: React.FC = () => {
                 options={departments}
               />
 
-              {/* Show department counts */}
+              {/* Department counts */}
               <div className="mt-4 text-sm text-gray-700 bg-gray-100 p-3 rounded-lg">
                 <p className="font-semibold mb-2">Department Status:</p>
                 {departments.map(dep => (
@@ -273,10 +267,7 @@ const StudentRegistrationForm: React.FC = () => {
         </div>
       </div>
 
-      <SuccessModal 
-        isOpen={showSuccessModal} 
-        onClose={() => setShowSuccessModal(false)} 
-      />
+      <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} />
     </>
   );
 };
