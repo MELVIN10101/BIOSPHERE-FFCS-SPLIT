@@ -99,7 +99,7 @@ const StudentRegistrationForm: React.FC = () => {
       setIsSubmitting(false);
       return;
     }
-    
+
       const studentData: Omit<Student, 'id' | 'created_at'> = {
         name: formData.name.trim(),
         reg_no: formData.reg_no.trim(),
@@ -157,7 +157,7 @@ const StudentRegistrationForm: React.FC = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              BIOSPHERE FFCS DEPARTMENT SELECTION FORM
+              BIOSPHERE FFCS, DEPARTMENT SELECTION FORM
             </h1>
             <p className="text-gray-600">
               Fill out the form below to complete your registration
