@@ -108,7 +108,7 @@ const StudentRegistrationForm: React.FC = () => {
       // ✅ safer department count query
       const { count, error: countError } = await supabase
         .from('students')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('department', formData.department);
 
       if (countError) {
