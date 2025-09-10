@@ -106,26 +106,26 @@ const StudentRegistrationForm: React.FC = () => {
 
     try {
       // ✅ safer department count query
-      const { count, error: countError } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true })
-        .eq('department', formData.department);
+      // const { count, error: countError } = await supabase
+      //   .from('students')
+      //   .select('*', { count: 'exact', head: true })
+      //   .eq('department', formData.department);
 
-      if (countError) {
-        console.error('Error checking department count:', countError.message, countError.details);
-        alert('An error occurred while checking the department limit. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
+      // if (countError) {
+      //   console.error('Error checking department count:', countError.message, countError.details);
+      //   alert('An error occurred while checking the department limit. Please try again.');
+      //   setIsSubmitting(false);
+      //   return;
+      // }
 
-      if (count !== null && count >= 20) {
-        setErrors(prev => ({
-          ...prev,
-          department: 'This department has reached its registration limit'
-        }));
-        setIsSubmitting(false);
-        return;
-      }
+      // if (count !== null && count >= 20) {
+      //   setErrors(prev => ({
+      //     ...prev,
+      //     department: 'This department has reached its registration limit'
+      //   }));
+      //   setIsSubmitting(false);
+      //   return;
+      // }
 
       const studentData: Omit<Student, 'id' | 'created_at'> = {
         name: formData.name.trim(),
